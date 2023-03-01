@@ -1,4 +1,6 @@
 from fastapi import FastAPI, Body
+import uvicorn
+
 
 app = FastAPI()
 
@@ -16,3 +18,7 @@ def get_post():
 @app.post('/createpost')
 def create_post(payload: dict = Body(...)):
     print(payload)
+
+
+if __name__ == "__main__":
+    uvicorn.run(f'{__name__}:app', reload=True)

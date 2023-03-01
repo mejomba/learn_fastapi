@@ -1,14 +1,15 @@
 import time
-import psycopg2
-from psycopg2.extras import RealDictCursor
+# import psycopg2
+# from psycopg2.extras import RealDictCursor
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
+import uvicorn
 
 from sqlalchemy.orm import Session
 
-from . import models
-from .database_manager import engin, get_db
+import models
+from database_manager import engin, get_db
 
 models.base.metadata.create_all(bind=engin)
 
@@ -22,17 +23,17 @@ class Post(BaseModel):
     # rating: Optional[int] = None  # this is fully optional
 
 
-while True:
-    try:
-        conn = psycopg2.connect(host='localhost', database='learn_fastapi', user='postgres', password='1',
-                                cursor_factory=RealDictCursor)
-        cur = conn.cursor()
-        print('connect to database.')
-        break
-    except Exception as err:
-        print('connect to database fail')
-        print(err)
-        time.sleep(2)
+# while True:
+#     try:
+#         conn = psycopg2.connect(host='localhost', database='learn_fastapi', user='postgres', password='1',
+#                                 cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
+#         print('connect to database.')
+#         break
+#     except Exception as err:
+#         print('connect to database fail')
+#         print(err)
+#         time.sleep(2)
 
 my_posts = [{'title': 'post 1 title', 'content': "post 1 content", 'id': 1},
             {'title': 'post 2 title', 'content': "post 2 content", 'id': 2},
@@ -96,3 +97,7 @@ def update_post(id: int, payload: Post, db: Session = Depends(get_db)):
         return {'data': post_query.first()}
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='post not found')
+
+
+if __name__ == "__main__":
+    uvicorn.run(f'{__name__}:app', reload=True)
