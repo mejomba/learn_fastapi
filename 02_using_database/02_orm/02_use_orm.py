@@ -1,14 +1,8 @@
-import time
-# import psycopg2
-# from psycopg2.extras import RealDictCursor
 from fastapi import FastAPI, Response, status, HTTPException, Depends
-from pydantic import BaseModel
-from typing import Optional
 import uvicorn
-
 from sqlalchemy.orm import Session
-
 import models
+import schemas
 from database_manager import engin, get_db
 
 models.base.metadata.create_all(bind=engin)
@@ -16,48 +10,17 @@ models.base.metadata.create_all(bind=engin)
 app = FastAPI()
 
 
-class Post(BaseModel):
-    title: str
-    content: str
-    published: bool = True  # this is optional field
-    # rating: Optional[int] = None  # this is fully optional
-
-
-# while True:
-#     try:
-#         conn = psycopg2.connect(host='localhost', database='learn_fastapi', user='postgres', password='1',
-#                                 cursor_factory=RealDictCursor)
-#         cur = conn.cursor()
-#         print('connect to database.')
-#         break
-#     except Exception as err:
-#         print('connect to database fail')
-#         print(err)
-#         time.sleep(2)
-
-my_posts = [{'title': 'post 1 title', 'content': "post 1 content", 'id': 1},
-            {'title': 'post 2 title', 'content': "post 2 content", 'id': 2},
-            {'title': 'post 3 title', 'content': "post 3 content", 'id': 3},
-            ]
-
-
-def get_index(id):
-    for i, p in enumerate(my_posts):
-        if p['id'] == id:
-            return i
-
 
 @app.get('/posts')
 def get_post(db: Session = Depends(get_db)):
     posts = db.query(models.Post).all()
-    return {'data': posts}
+    return posts
 
 
-@app.post('/createpost', status_code=status.HTTP_201_CREATED)  # change default status code
-def create_post(payload: Post, db: Session = Depends(get_db)):
+@app.post('/createpost', status_code=status.HTTP_201_CREATED, response_model=schemas.PostResponse)  # change default status code
+def create_post(payload: schemas.PostCreate, db: Session = Depends(get_db)):
     # new_post = models.Post(title=payload.title, content=payload.content, published=payload.published)
     new_post = models.Post(**payload.dict())
-    print(new_post)
     db.add(new_post)
     db.commit()
     db.refresh(new_post)  # like RETURNING in sql statement
@@ -67,9 +30,8 @@ def create_post(payload: Post, db: Session = Depends(get_db)):
 @app.get('/posts/{id}')
 def get_post(id: int, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == id).first()
-    print(post)
     if post:
-        return {'data': post}
+        return post
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='not found')
 
@@ -78,7 +40,6 @@ def get_post(id: int, db: Session = Depends(get_db)):
 def delete_post(id: int, db: Session = Depends(get_db)):
     post_query = db.query(models.Post).filter(models.Post.id == id)
     post = post_query.first()
-    print(post)
     if post is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='post not found')
     else:
@@ -87,14 +48,14 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 
 
 @app.put('/posts/{id}', status_code=status.HTTP_206_PARTIAL_CONTENT)
-def update_post(id: int, payload: Post, db: Session = Depends(get_db)):
+def update_post(id: int, payload: schemas.PostCreate, db: Session = Depends(get_db)):
     post_query = db.query(models.Post).filter(models.Post.id == id)
     post = post_query.first()
 
     if post is not None:
         post_query.update(payload.dict(), synchronize_session=False)
         db.commit()
-        return {'data': post_query.first()}
+        return post_query.first()
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='post not found')
 
