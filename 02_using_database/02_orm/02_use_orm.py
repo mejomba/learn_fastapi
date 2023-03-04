@@ -60,5 +60,15 @@ def update_post(id: int, payload: schemas.PostCreate, db: Session = Depends(get_
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='post not found')
 
 
+@app.post('/users', status_code=status.HTTP_201_CREATED, response_model=schemas.UserCreateResponse)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    new_user = models.User(**user.dict())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return new_user
+
+
 if __name__ == "__main__":
     uvicorn.run(f'{__name__}:app', reload=True)
