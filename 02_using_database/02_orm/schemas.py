@@ -34,3 +34,12 @@ class UserCreateResponse(UserCreate):
 
     class Config:
         orm_mode = True
+
+
+class UserGetResponse(BaseModel):
+    email: EmailStr
+    created_at: datetime
+    id: int
+
+    class Config:
+        orm_mode = True
