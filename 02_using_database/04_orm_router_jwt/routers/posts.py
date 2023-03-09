@@ -1,5 +1,7 @@
 from fastapi import status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
+
+import manage_jwt
 import models
 import schemas
 from database_manager import get_db
@@ -17,7 +19,10 @@ def get_post(db: Session = Depends(get_db)):
 
 
 @router.post('/createpost', status_code=status.HTTP_201_CREATED, response_model=schemas.PostResponse)  # change default status code
-def create_post(payload: schemas.PostCreate, db: Session = Depends(get_db)):
+def create_post(payload: schemas.PostCreate,
+                db: Session = Depends(get_db),
+                current_user: models.User = Depends(manage_jwt.get_current_user)
+                ):
     # new_post = models.Post(title=payload.title, content=payload.content, published=payload.published)
     new_post = models.Post(**payload.dict())
     db.add(new_post)
